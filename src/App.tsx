@@ -9,7 +9,7 @@ export const App = () => {
     productId: null,
   });
 
-  const { getProduct, products, setProducts, clearCart, isLoading, error } =
+  const { getProduct, products, setProducts, deleteProduct,clearCart, isLoading, error } =
     useProducts(formValues);
 
   const onInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -35,7 +35,10 @@ export const App = () => {
       setProducts((prev) =>
         prev.map((product) =>
           product.id === formValues.productId
-            ? { ...product, quantity: product.quantity + (formValues.quantity ?? 0) }
+            ? {
+                ...product,
+                quantity: product.quantity + (formValues.quantity ?? 0),
+              }
             : product
         )
       );
@@ -124,8 +127,8 @@ export const App = () => {
 
             {products.length > 0 && (
               <button
-                type="submit"
-                className="bg-red-500 text-white p-2 rounded hover:bg-blue-600"
+                type="button"
+                className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
                 aria-label="Limpiar productos del carrito"
                 onClick={() => clearCart()}
               >
@@ -164,6 +167,9 @@ export const App = () => {
                     <th scope="col" className="p-2 text-left">
                       Foto
                     </th>
+                    <th scope="col" className="p-2 text-left">
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -182,6 +188,16 @@ export const App = () => {
                           alt={`Foto de ${product.title}`}
                         />
                       </td>
+                      <td className="p2">
+                        <button
+                          type="button"
+                          className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
+                          aria-label="Eliminar producto del carrito"
+                          onClick={() => deleteProduct(product.id)}
+                        >
+                          Eliminar
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -190,7 +206,8 @@ export const App = () => {
                     <td colSpan={2} className="p-2 text-right">
                       Total:
                     </td>
-                    <td className="p-2">${getTotalPrice(products)}</td>
+                    <td className="p-2">${getTotalPrice(products).toFixed(2)}</td>
+                    <td></td>
                     <td></td>
                     <td></td>
                   </tr>

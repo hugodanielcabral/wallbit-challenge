@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import type { Product } from "../types/product";
 import { FormValues } from "../types/formValues";
 
-const STORAGE_KEY = 'cart-products';
+const STORAGE_KEY = "cart-products";
 
 export const useProducts = (formValues: FormValues) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [products, setProducts] = useState<Product[]>(() => {
     try {
       const storedProducts = localStorage.getItem(STORAGE_KEY);
@@ -56,6 +56,12 @@ export const useProducts = (formValues: FormValues) => {
     }
   };
 
+  const deleteProduct = (id: number) => {
+    const filteredProduct = products.filter((p) => p.id !== id);
+
+    setProducts(filteredProduct);
+  };
+
   const clearCart = () => {
     setProducts([]);
   };
@@ -66,6 +72,7 @@ export const useProducts = (formValues: FormValues) => {
     products,
     setProducts,
     getProduct,
-    clearCart
+    deleteProduct,
+    clearCart,
   };
 };
