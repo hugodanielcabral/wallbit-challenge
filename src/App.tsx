@@ -1,58 +1,16 @@
 import { ChangeEvent, FormEvent, useState } from "react";
-
-interface Product {
-  id: number;
-  title: string;
-  price: number;
-  description: string;
-  category: string;
-  image: "string";
-  quantity: number;
-}
-
-interface FormValues {
-  quantity: number;
-  productId: number;
-}
+import { useProducts } from "./hooks/useProducts";
+import { getTotalPrice } from "./utils/getTotalPrice";
+import { FormValues } from "./types/formValues";
 
 export const App = () => {
   const [formValues, setFormValues] = useState<FormValues>({
-    quantity: 0,
-    productId: 0,
+    quantity: null,
+    productId: null,
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
 
-  const getProduct = async (id: number) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      if (!id || typeof id !== "number") {
-        setError("ID inválido");
-        return null;
-      }
-
-      const response = await fetch(`https://fakestoreapi.com/products/${id}`);
-      if (response.status !== 200)
-        throw new Error(
-          "Ocurrió un error al traer el producto: " + response.statusText
-        );
-
-      const data = await response.json();
-
-      setProducts((prev) => [
-        ...prev,
-        { ...data, quantity: formValues.quantity },
-      ]);
-    } catch (error) {
-      setError("Error al cargar los productos");
-      console.log(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { getProduct, products, setProducts, clearCart, isLoading, error } =
+    useProducts(formValues);
 
   const onInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -66,23 +24,31 @@ export const App = () => {
   const onFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
+    if (formValues.quantity && formValues.quantity <= 0) {
+      alert("Debes aumentar la cantidad del producto");
+      return;
+    }
+
     const existingProduct = products.find((p) => p.id === formValues.productId);
     if (existingProduct) {
       //* Actualizo la cantidad del producto si ya existe
       setProducts((prev) =>
         prev.map((product) =>
           product.id === formValues.productId
-            ? { ...product, quantity: product.quantity + formValues.quantity }
+            ? { ...product, quantity: product.quantity + (formValues.quantity ?? 0) }
             : product
         )
       );
+      alert("Producto actualizado");
     } else {
-      await getProduct(formValues.productId);
+      if (formValues.productId !== null) {
+        await getProduct(formValues.productId);
+      }
     }
 
     setFormValues({
-      quantity: 0,
-      productId: 0,
+      quantity: null,
+      productId: null,
     });
   };
 
@@ -115,7 +81,7 @@ export const App = () => {
                   max={100}
                   className="p-2 border rounded w-full"
                   aria-required="true"
-                  value={formValues.quantity}
+                  value={formValues.quantity ?? ""}
                   onChange={onInputChange}
                 />
               </div>
@@ -130,7 +96,7 @@ export const App = () => {
                   placeholder="ID del Producto"
                   className="p-2 border rounded w-full"
                   aria-required="true"
-                  value={formValues.productId}
+                  value={formValues.productId ?? ""}
                   onChange={onInputChange}
                 />
               </div>
@@ -151,13 +117,29 @@ export const App = () => {
           aria-labelledby="cart-title"
           className="bg-white p-4 rounded shadow"
         >
-          <h2 id="cart-title" className="text-xl mb-4">
-            Carrito de compra
-          </h2>
+          <div className="flex items-center justify-between p-2">
+            <h2 id="cart-title" className="text-xl mb-4">
+              Carrito de compra
+            </h2>
+
+            {products.length > 0 && (
+              <button
+                type="submit"
+                className="bg-red-500 text-white p-2 rounded hover:bg-blue-600"
+                aria-label="Limpiar productos del carrito"
+                onClick={() => clearCart()}
+              >
+                Limpiar carrito
+              </button>
+            )}
+          </div>
           <section aria-live="polite" className="cart-items">
             {isLoading && <p aria-live="assertive">Cargando productos...</p>}
             {error && (
-              <h3 className="text-red-500 font-bold" aria-live="assertive">
+              <h3
+                className="text-red-500 text-4xl text-center p-2 font-bold"
+                aria-live="assertive"
+              >
                 {error}
               </h3>
             )}
@@ -190,7 +172,9 @@ export const App = () => {
                       <td className="p-2">{product.quantity}</td>
                       <td className="p-2">{product.title}</td>
                       <td className="p-2">${product.price}</td>
-                      <td className="p-2">${product.price}</td>
+                      <td className="p-2">
+                        ${product.price * product.quantity}
+                      </td>
                       <td className="p-2">
                         <img
                           className="w-16 h-16 object-contain"
@@ -206,7 +190,7 @@ export const App = () => {
                     <td colSpan={2} className="p-2 text-right">
                       Total:
                     </td>
-                    <td className="p-2">${0}</td>
+                    <td className="p-2">${getTotalPrice(products)}</td>
                     <td></td>
                     <td></td>
                   </tr>
